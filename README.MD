@@ -67,7 +67,7 @@
     sudo docker stop gazebo_env
     sudo docker rm gazebo_env
     xhost +local:root
-    sudo docker run --name gazebo_env -itd --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" -v /home/ntueee/yangjianbing:/root/code -p 2022:22 -e NVIDIA_DRIVER_CAPABILITIES=compute,utility --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --gpus all --shm-size="12g" --restart=always nvidia-cuda-11.4.3-cudnn8-devel-ubuntu20.04-ros1:v1.0
+    sudo docker run --name gazebo_env -itd --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" -v /home/ntueee/yangjianbing:/root/code -p 2022:22 -e NVIDIA_DRIVER_CAPABILITIES=compute,utility --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --gpus all --shm-size="12g" --restart=always nvidia-cuda-11.4.3-cudnn8-devel-ubuntu20.04-ros1:v1.1
     sudo docker exec -it gazebo_env /bin/bash
     ```
 
@@ -143,7 +143,7 @@
 
 ### 1.1.4 优化 rviz 启动
 
-- 重复启动launch文件时，Rviz 之前的组件配置信息不会自动保存，需要重复执行步骤4的操作，为了方便使用，可以使用如下方式优化:
+- 重复启动launch文件时，Rviz 之前的组件配置信息不会自动保存，需要重复执行步骤1.1.3的操作，为了方便使用，可以使用如下方式优化:
 
     - 首先，将当前配置保存进config目录
     ![](figures/10_rviz_save_config.png)
@@ -155,6 +155,106 @@
     </launch>
 
     ```
+
+## 1.2 [URDF](https://wiki.ros.org/urdf)语法详解
+URDF 文件是一个标准的 XML 文件，在 ROS 中预定义了一系列的标签用于描述机器人模型，机器人模型可能较为复杂，但是 ROS 的 URDF 中机器人的组成却是较为简单，可以主要简化为两部分:连杆(link标签) 与 关节(joint标签)，接下来我们就通过案例了解一下 URDF 中的不同标签:
+
+- robot 根标签，类似于 launch文件中的launch标签
+- link 连杆标签
+- joint 关节标签
+- gazebo 集成gazebo需要使用的标签
+
+关于gazebo标签，后期在使用 gazebo 仿真时，才需要使用到，用于配置仿真环境所需参数，比如: 机器人材料属性、gazebo插件等，但是该标签不是机器人模型必须的，只有在仿真时才需设置
+
+### 1.2.1 URDF语法详解01_robot
+
+urdf 中为了保证 xml 语法的完整性，使用了robot标签作为根标签，所有的 link 和 joint 以及其他标签都必须包含在 robot 标签内,在该标签内可以通过 name 属性设置机器人模型的名称
+
+- 属性
+    - name: 指定机器人模型的名称
+
+- 子标签
+    - 其他标签都是子级标签
+
+### 1.2.2 URDF语法详解02_link
+urdf 中的 link 标签用于描述机器人某个部件(也即刚体部分)的外观和物理属性，比如: 机器人底座、轮子、激光雷达、摄像头...每一个部件都对应一个 link, 在 link 标签内，可以设计该部件的形状、尺寸、颜色、惯性矩阵、碰撞参数等一系列属性
+
+![](figures/01_link.png)
+
+- 属性
+    - name: 为连杆命名
+
+- 子标签
+    - visual: 描述外观(对应的数据是可视的)
+        - geometry: 设置连杆的形状
+            - 标签1: box(盒状)
+                - 属性:size=长(x) 宽(y) 高(z)
+            - 标签2: cylinder(圆柱)
+                - 属性:radius=半径 length=高度
+            - 标签3: sphere(球体)
+                - 属性:radius=半径
+            - 标签4: mesh(为连杆添加皮肤)
+                - 属性: filename=资源路径(格式:`package://<packagename>/<path>/文件`)
+        - origin: 设置偏移量与倾斜弧度
+            - 属性1: xyz=x偏移 y便宜 z偏移
+            - 属性2: rpy=x翻滚 y俯仰 z偏航 (单位是弧度)
+        - metrial 设置材料属性(颜色)
+            - 属性: name
+            - 标签: color
+                - 属性: rgba=红绿蓝权重值与透明度 (每个权重值以及透明度取值[0,1])
+    - collision: 连杆的碰撞属性
+    - Inertial: 连杆的惯性矩阵
+
+- 案例：分别生成长方体、圆柱与球体的机器人部件
+    - [urdf](src/rviz_gazebo_learning/urdf/show_box_cylinder_sphere.urdf)文件
+    - [launch](src/rviz_gazebo_learning/launch/show_box_cylinder_sphere.launch)文件
+
+### 1.2.3 URDF语法详解03_joint
+urdf 中的 joint 标签用于描述机器人关节的运动学和动力学属性，还可以指定关节运动的安全极限，机器人的两个部件(分别称之为 parent link 与 child link)以"关节"的形式相连接，不同的关节有不同的运动形式: 旋转、滑动、固定、旋转速度、旋转角度限制....,比如:安装在底座上的轮子可以360度旋转，而摄像头则可能是完全固定在底座上。
+
+`joint标签对应的数据在模型中是不可见的`
+
+![](figures/02_link.png)
+
+- 属性
+    - name: 为关节命名
+    - type: 关节运动形式
+        - continuous: 旋转关节，可以绕单轴无限旋转
+
+        - revolute: 旋转关节，类似于 continues,但是有旋转角度限制
+        - prismatic: 滑动关节，沿某一轴线移动的关节，有位置极限 
+        - planer: 平面关节，允许在平面正交方向上平移或旋转
+        - floating: 浮动关节，允许进行平移、旋转运动
+        - fixed: 固定关节，不允许运动的特殊关节
+- 子标签
+    - parent(必需的)  
+    parent link的名字是一个强制的属性：
+        - link:父级连杆的名字，是这个link在机器人结构树中的名字。
+
+    
+    - child(必需的)   
+    child link的名字是一个强制的属性：
+        - link:子级连杆的名字，是这个link在机器人结构树中的名字。
+    - origin
+        - 属性: xyz=各轴线上的偏移量 rpy=各轴线上的偏移弧度。
+    - axis
+        - 属性: xyz用于设置围绕哪个关节轴运动。
+
+- 案例: 创建机器人模型，底盘为长方体，在长方体的前面添加一摄像头，摄像头可以沿着 Z 轴 360 度旋转。
+    - [urdf](src/rviz_gazebo_learning/urdf/car_with_joint.urdf)文件
+    - [launch](src/rviz_gazebo_learning/launch/car_with_joint.launch)文件
+
+### 1.2.4 URDF工具
+- 在ROS中，提供了一些工具来方便URDF文件的编写
+    - check_urdf命令可以检查复杂的urdf文件是否存在语法问题
+        `check_urdf xxx.urdf`  
+            ![](figures/check_urdf.png)
+    - urdf_to_graphiz命令可以查看urdf模型结构，显示不同link 的层级关系
+        - 进入urdf文件所属目录，调用:`urdf_to_graphiz urdf文件`，当前目录下会生成 pdf 文件
+            ![](figures/05_URDF.png)
+
+
+
 
 
 ## 1.1 `robot_navigation`，参考[视频](https://www.bilibili.com/video/BV143411C75B?p=2&vd_source=42f1e486842e9add1356fbbd0f4159f3)
