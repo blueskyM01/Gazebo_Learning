@@ -1,0 +1,10 @@
+<launch>
+
+    <!-- 设置参数 -->
+    <!-- <param name="robot_description" textfile="$(find 包名)/urdf/urdf01_HelloWorld.urdf" /> -->
+    <param name="robot_description" textfile="$(find rviz_gazebo_learning)/urdf/rviz_urdf.urdf" />
+
+    <!-- 启动 rviz -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rviz_gazebo_learning)/config/show_mycar.rviz" />
+
+</launch>

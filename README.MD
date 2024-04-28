@@ -72,23 +72,100 @@
     ```
 
 # 一、Gazebo
-## 1.1 `robot_navigation`，参考[视频](https://www.bilibili.com/video/BV143411C75B?p=2&vd_source=42f1e486842e9add1356fbbd0f4159f3)
-- 编译
-    ```
-    cd Gazebo_Learning
-    catkin_make --pkg robot_navigation
-    ```
 - 安装相关依赖
     ```
     apt-get install ros-noetic-amcl ros-noetic-move-base ros-noetic-slam-gmapping ros-noetic-slam-karto  ros-noetic-dwa-local-planner ros-noetic-teb-local-planner ros-noetic-map-server ros-noetic-hector-slam liburdfdom-tools ros-noetic-tf2-tools
     ```
-
 - 下载[Gazebo](https://classic.gazebosim.org/tutorials?tut=model_structure&cat=build_robot)提供的模型库，并将其移动到`~/.gazebo`目录下，最后将`gazebo_models`改名为`models`，最后及得重启下`gazebo`就可以导入模型了
     ```
     cd Gazebo_Learning
     git clone https://github.com/osrf/gazebo_models
     mv gazebo_models/ ~/.gazebo/
     ```
+
+## 1.1 URDF集成Rviz基本流程
+- 创建功能包
+
+    ```
+    cd xxx_ws/src
+    catkin_create_pkg rviz_gazebo_learning urdf xacro tf2 tf2_ros tf2_geometry_msgs roscpp rospy std_msgs geometry_msgs
+    ```
+
+- 在`rviz_gazebo_learning`功能包下新建如下目录 
+ 
+    `mkdir urdf meshes config launch`
+    - `urdf`: 存储 urdf 文件的目录
+
+    - `meshes`:机器人模型渲染文件(暂不使用)
+
+    - `config`: 配置文件
+
+    - `launch`: 存储 launch 启动文件  
+    
+
+### 1.1.1 创建[urdf](https://wiki.ros.org/urdf)文件
+- `cd urdf`
+- 编辑如下内容
+    ```
+    <robot name="mycar">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="0.5 0.2 0.1" />
+            </geometry>
+        </visual>
+    </link>
+    </robot>
+    ```
+
+### 1.1.2 在launch文件中集成URDF与Rviz
+
+- 在launch目录下，新建[launch](src/rviz_gazebo_learning/launch/rviz_urdf_launch.launch)文件，该 launch 文件需要启动 Rviz，并导入 urdf 文件，Rviz 启动后可以自动载入解析urdf文件，并显示机器人模型。在ROS中，可以将urdf文件的路径设置到参数服务器，使用的参数名是:`robot_description`,示例代码如下: 
+
+    ```
+    <launch>
+
+        <!-- 设置参数 -->
+        <param name="robot_description" textfile="$(find rviz_gazebo_learning)/urdf/rviz_urdf.urdf" />
+
+        <!-- 启动 rviz -->
+        <node pkg="rviz" type="rviz" name="rviz" />
+
+    </launch>
+    ```
+
+### 1.1.3 在Rviz中显示机器人模型
+- rviz 启动后，会发现并没有盒装的机器人模型，这是因为默认情况下没有添加机器人显示组件，需要手动添加，添加方式如下:
+
+![1](figures/01_URDF.png)
+
+![2](figures/02_URDF.png)
+
+### 1.1.4 优化 rviz 启动
+
+- 重复启动launch文件时，Rviz 之前的组件配置信息不会自动保存，需要重复执行步骤4的操作，为了方便使用，可以使用如下方式优化:
+
+    - 首先，将当前配置保存进config目录
+    ![](figures/10_rviz_save_config.png)
+    - 然后，launch文件中 Rviz 的启动配置添加参数:args,值设置为-d 配置文件路径
+    ```
+    <launch>
+        <param name="robot_description" textfile="$(find 包名)/urdf/urdf/urdf01_HelloWorld.urdf" />
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find 包名)/config/rviz/show_mycar.rviz" />
+    </launch>
+
+    ```
+
+
+## 1.1 `robot_navigation`，参考[视频](https://www.bilibili.com/video/BV143411C75B?p=2&vd_source=42f1e486842e9add1356fbbd0f4159f3)
+- 编译
+    ```
+    cd Gazebo_Learning
+    catkin_make --pkg robot_navigation
+    ```
+
+
+
 
 ## 1.2 world创建
 - 保存的`.world`文件启动（存在pkg下的world文件夹中）
@@ -138,7 +215,11 @@
 
 ### 2.1.1 方案A:C++实现
 - 创建功能包(创建项目功能包依赖于 tf2、tf2_ros、tf2_geometry_msgs、roscpp rospy std_msgs geometry_msgs)
-    `catkin_create_pkg tf_learning tf2 tf2_ros tf2_geometry_msgs roscpp rospy std_msgs geometry_msgs`
+
+    ```
+    cd xxx_ws/src
+    catkin_create_pkg tf_learning tf2 tf2_ros tf2_geometry_msgs roscpp rospy std_msgs geometry_msgs
+    ```
 
 - [tf2_static_brocast_publisher.cpp](src/tf_learning/src/tf2_static_brocast_publisher.cpp)
 
