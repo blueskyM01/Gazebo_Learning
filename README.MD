@@ -9,6 +9,9 @@
         - 必须在host主机上启动该镜像
         - 必须用sudo docker exec -it xxxx /bin/bash进入镜像
 
+- python3 link  
+    `rm -rf /usr/bin/python`
+    `ln -s /usr/bin/python3 /usr/bin/python`
 - Install dependence
     - apt update && apt install -y libsm6 libxext6
     - apt-get install -y libxrender-dev
@@ -18,9 +21,9 @@
 - 测试可视化是否成功
     ```
     import cv2
-    img = cv2.imread("/figures/gazebo_show.png")
+    img = cv2.imread("figures/gazebo_show.png")
     cv2.imshow("show", img)
-    cv2.cv2.waitKey(30)
+    cv2.waitKey(3000)
     ```
 
 - Install ssh (Note that enter container first!)
@@ -74,7 +77,7 @@
 # 一、Gazebo
 - 安装相关依赖
     ```
-    apt-get install ros-noetic-amcl ros-noetic-move-base ros-noetic-slam-gmapping ros-noetic-slam-karto  ros-noetic-dwa-local-planner ros-noetic-teb-local-planner ros-noetic-map-server ros-noetic-hector-slam liburdfdom-tools ros-noetic-tf2-tools
+    apt-get install ros-noetic-amcl ros-noetic-move-base ros-noetic-slam-gmapping ros-noetic-slam-karto  ros-noetic-dwa-local-planner ros-noetic-teb-local-planner ros-noetic-map-server ros-noetic-hector-slam liburdfdom-tools ros-noetic-tf2-tools ros-noetic-arbotix
     ```
 - 下载[Gazebo](https://classic.gazebosim.org/tutorials?tut=model_structure&cat=build_robot)提供的模型库，并将其移动到`~/.gazebo`目录下，最后将`gazebo_models`改名为`models`，最后及得重启下`gazebo`就可以导入模型了
     ```
@@ -83,7 +86,7 @@
     mv gazebo_models/ ~/.gazebo/
     ```
 
-## 1.1 URDF集成Rviz基本流程
+## 1.1 [URDF集成Rviz基本流程](http://www.autolabor.com.cn/book/ROSTutorials/di-6-zhang-ji-qi-ren-xi-tong-fang-zhen/62-fang-zhen-urdf-ji-cheng-rviz.html)
 - 创建功能包
 
     ```
@@ -254,6 +257,14 @@ urdf 中的 joint 标签用于描述机器人关节的运动学和动力学属�
             ![](figures/05_URDF.png)
 
 
+### 1.3 [xacro](http://www.autolabor.com.cn/book/ROSTutorials/di-6-zhang-ji-qi-ren-xi-tong-fang-zhen/64-fang-zhen-urdf-rviz-yu-gazebo-zong-he-ying-yong.html)
+
+
+### 1.4 [Arbotix](http://www.autolabor.com.cn/book/ROSTutorials/di-6-zhang-ji-qi-ren-xi-tong-fang-zhen/66-rviz-kong-zhi-ji-qi-ren-mo-xing-yun-dong.html)
+- Arbotix:Arbotix 是一款控制电机、舵机的控制板，并提供相应的 ros 功能包，这个功能包的功能不仅可以驱动真实的 Arbotix 控制板，它还提供一个差速控制器，通过接受速度控制指令更新机器人的 joint 状态，从而帮助我们实现机器人在 rviz 中的运动。
+
+- 这个差速控制器在 arbotix_python 程序包中，完整的 arbotix 程序包还包括多种控制器，分别对应 dynamixel 电机、多关节机械臂以及不同形状的夹持器。
+
 
 
 
@@ -300,7 +311,7 @@ urdf 中的 joint 标签用于描述机器人关节的运动学和动力学属�
 [SolidWorks to URDF Exporter](https://wiki.ros.org/sw_urdf_exporter)
 
 
-# 二、TF坐标变化
+# 二、[TF坐标变化](http://www.autolabor.com.cn/book/ROSTutorials/di-5-zhang-ji-qi-ren-dao-hang/51-tfzuo-biao-bian-huan.html)
 ## 2.1 静态坐标变换
     所谓静态坐标变换，是指两个坐标系之间的相对位置是固定的。
 - 需求描述:
